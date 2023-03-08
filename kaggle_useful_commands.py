@@ -59,7 +59,7 @@ y_pred = gd.best_estimator_.predict(X_test)
 
 
 
-
+# standard models
 # Scalers
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
