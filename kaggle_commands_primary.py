@@ -21,8 +21,9 @@ for i in onehot_cols:
 estimators = [("rf", gd.best_estimator_), ("gbm", gd_gbm.best_estimator_)]
 reg = StackingRegressor(estimators=estimators, final_estimator=RandomForestRegressor())
 
-
+##################################
 # titanic
+##################################
 data_df['Name'].str.extract('([A-Za-z]+)\.', expand=True)
 mapping = {'Mlle': 'Miss', 'Major': 'Mr', 'Col': 'Mr', 'Sir': 'Mr', 'Don': 'Mr', 'Mme': 'Miss',
           'Jonkheer': 'Mr', 'Lady': 'Mrs', 'Capt': 'Mr', 'Countess': 'Mrs', 'Ms': 'Miss', 'Dona': 'Mrs'}
@@ -68,7 +69,9 @@ gd=GridSearchCV(estimator = KNeighborsClassifier(), param_grid = hyperparams, ve
 gd.fit(X, y)
 y_pred = gd.best_estimator_.predict(X_test)
 
+##################################
 # Ame Housing
+##################################
 np.log1p(train["SalePrice"])
 all_data["PoolQC"] = all_data["PoolQC"].fillna("None")
 all_data["LotFrontage"] = all_data.groupby("Neighborhood")["LotFrontage"].transform(
@@ -100,7 +103,9 @@ GBoost = GradientBoostingRegressor(n_estimators=3000, learning_rate=0.05,
                                    loss='huber', random_state =5)
 score = rmsle_cv(GBoost)
 
+#####################################
 # space titanic
+#####################################
 from pandas_profiling import ProfileReport
 profile = ProfileReport(train_df, title="Profiling Report")
 col_to_sum = ['RoomService', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck']
@@ -118,6 +123,54 @@ model_fs = CatBoostClassifier(verbose=False)
 sf = SequentialFeatureSelector(model_fs, scoring='accuracy', direction = 'backward')
 sf.fit(X,y)
  list(sf.get_feature_names_out())
+
+########################################
+# store sales
+########################################
+pd.read_csv(path + 'oil.csv', parse_dates=['date'], infer_datetime_format=True, index_col='date')
+data_oil['dcoilwtico'].rolling(7).mean()
+calendar.merge(data_oil, how='left', left_index=True, right_index=True)
+calendar['ma_oil'].fillna(method='ffill', inplace=True)
+calendar['dofw'] = calendar.index.dayofweek
+df_hev.groupby(df_hev.index).first()
+df_train.date = df_train.date.dt.to_period('D')
+df_train = df_train.set_index(['store_nbr', 'family', 'date']).sort_index()
+
+y = df_train.unstack(['store_nbr', 'family']).loc[sdate:edate]
+from statsmodels.tsa.deterministic import CalendarFourier, DeterministicProcess, Fourier
+# Fourier features
+fourier = CalendarFourier(freq='W', order=4)
+dp = DeterministicProcess(index=y.index,
+                          constant=False,
+                          order=1,
+                          seasonal=False,
+                          additional_terms=[fourier],
+                          drop=True)
+X = dp.in_sample()
+X_test = dp.out_of_sample(steps=16)
+calendar.loc[stest:etest]['ma_oil'].values
+
+X['oil']  = calendar.loc[sdate:edate]['ma_oil'].values
+model = Ridge(fit_intercept=True, solver='auto', alpha=0.4, random_state=SEED)
+model.fit(X, y)
+y_pred.stack(['store_nbr', 'family']).reset_index()
+from sklearn.metrics import mean_squared_log_error
+y_target.groupby('family').apply(lambda r: mean_squared_log_error(r['sales'], r['sales_pred']))
+df_train.unstack(['store_nbr', 'family']).loc['2014':].loc(axis=1)['sales', :, 'SCHOOL AND OFFICE SUPPLIES'].plot(legend=None)
+
+r1 = ExtraTreesRegressor(n_estimators=500, n_jobs=-1, random_state=SEED)
+r2 = RandomForestRegressor(n_estimators=500, n_jobs=-1, random_state=SEED)
+b1 = BaggingRegressor(base_estimator=r1,
+                      n_estimators=10,
+                      n_jobs=-1,
+                      random_state=SEED)
+b2 = BaggingRegressor(base_estimator=r2,
+                      n_estimators=10,
+                      n_jobs=-1,
+                      random_state=SEED)
+model = VotingRegressor([('et', b1), ('rf', b2)])
+np.stack(y_pred, axis=1)
+
 # standard models
 # Scalers
 from sklearn.preprocessing import MinMaxScaler
