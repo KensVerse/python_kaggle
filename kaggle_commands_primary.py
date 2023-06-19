@@ -1,4 +1,7 @@
 conda update --all
+conda install -c conda-forge jupyterthemes
+git checkout 0d1d7fc32 # revert to previous commit temporarily
+import matplotlib.pyplot as plt
 feature_flag = features.isna().sum() > features.shape[0] * 0.2
 features_omit = list(feature_flag[feature_flag == True].index)
 
@@ -170,6 +173,60 @@ b2 = BaggingRegressor(base_estimator=r2,
                       random_state=SEED)
 model = VotingRegressor([('et', b1), ('rf', b2)])
 np.stack(y_pred, axis=1)
+
+########################################
+# benetech_MakeGraphsAccessible
+########################################
+
+model = VisionEncoderDecoderModel.from_pretrained(CFG.model_dir)
+model.eval()
+
+device = torch.device("cuda:0")
+
+model.to(device)
+decoder_start_token_id = model.config.decoder_start_token_id
+processor = DonutProcessor.from_pretrained(CFG.model_dir)
+
+ids = ds["id"]
+ds.set_transform(partial(preprocess, processor=processor))
+
+data_loader = DataLoader(
+    ds, batch_size=CFG.batch_size, shuffle=False
+)
+
+
+all_generations = []
+for batch in tqdm(data_loader):
+    pixel_values = batch["pixel_values"].to(device)
+
+    batch_size = pixel_values.shape[0]
+
+    decoder_input_ids = torch.full(
+        (batch_size, 1),
+        decoder_start_token_id,
+        device=pixel_values.device,
+    )
+
+    try:
+        outputs = model.generate(
+            pixel_values,
+            decoder_input_ids=decoder_input_ids,
+            max_length=CFG.max_length,
+            early_stopping=True,
+            pad_token_id=processor.tokenizer.pad_token_id,
+            eos_token_id=processor.tokenizer.eos_token_id,
+            use_cache=True,
+            num_beams=2,       #1 int    (1 - 10)
+            temperature=.9,     #1 float  (0 -  ) less div - more div
+            top_k=1,           #1 int    (1 -  ) less div - more div
+            top_p=.4,           #1 float (0 - 1) more div - less div
+            return_dict_in_generate=True,
+        )
+
+        all_generations.extend(processor.batch_decode(outputs.sequences))
+
+    except:
+        all_generations.extend([""]*batch_size)
 
 # standard models
 # Scalers
