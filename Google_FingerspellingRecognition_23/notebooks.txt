@@ -1,0 +1,2 @@
+https://www.kaggle.com/code/irohith/aslfr-ctc-based-on-prev-comp-1st-place
+https://www.kaggle.com/code/markwijkhuizen/aslfr-transformer-training-inference
