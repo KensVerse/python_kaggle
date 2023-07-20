@@ -1,0 +1,2 @@
+https://www.kaggle.com/code/leonidkulyk/lb-0-709-llm-se-deberta-v3-large-t-1k-wiki/notebook?scriptVersionId=136837927
+https://www.kaggle.com/code/maverickss26/lb-0-709-llm-science-exam/notebook
